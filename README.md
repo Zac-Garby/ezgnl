@@ -7,62 +7,27 @@
 **The server**
 
 ```go
-package main
-
-import (
-    "log"
-
-    "github.com/Zac-Garby/ezgnl/server"
-)
-
-type MoveResult struct {
-    Collided bool
-}
-
+// A simple echo server
 func main() {
-    s, _ := server.New(":8080")
-    defer s.Close()
+	s := server.New("8080")
+	defer s.Close()
 
-    s.Accept(func(conn server.Conn, id server.UUID) {
-        conn.Handle("move", func() {
-            dir := conn.Data("direction")
-            log.Println("user", id, "moved in direction:", dir)
+	s.Accept(func(conn server.Conn, id server.UUID) {
+		conn.Handle("message", func(msg interface{}) {
+			log.Println("received message:", msg)
+			conn.Send("reply", msg)
+		})
 
-            conn.Send("result", MoveResult{ Collided: true })
-        })
+		conn.Disconnect(func(interface{}) {
+			log.Println("a user left")
+		})
+	})
 
-        conn.Disconnect(func() {
-            log.Println("user", id, "has left the server")
-        })
-    })
+	log.Println("listening...")
 
-    _ = s.Listen()
-}
-```
-
-**The client**
-
-```go
-package main
-
-import (
-    "log"
-
-    "github.com/Zac-Garby/ezgnl/client"
-)
-
-type MoveMessage struct {
-    Direction string
+	if err := s.Listen("tcp"); err != nil {
+		log.Println("listen:", err)
+	}
 }
 
-func main() {
-    c, _ := client.New("localhost:8080")
-    defer c.Close()
-
-    time.Sleep(time.Second * 2)
-    c.Send("move", MoveMessage{ Direction: "right" })
-
-    time.Sleep(time.Second)
-    c.Send("move", MoveMessage{ Direction: "up" })
-}
 ```
