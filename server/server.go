@@ -37,6 +37,9 @@ type Server struct {
 	// connHandler is called for each
 	connHandler ConnectionHandler
 	handlers    map[string]MessageHandler
+
+	// whether the server is closed or not
+	closed bool
 }
 
 // New constructs a new server on the given port, but doesn't
@@ -47,6 +50,7 @@ func New(port string) *Server {
 		connections: make(map[UUID]Conn),
 		incomings:   make(chan incoming),
 		outgoings:   make(chan outgoing),
+		closed:      true,
 	}
 }
 
@@ -59,9 +63,11 @@ func (s *Server) Listen(network string) error {
 		return err
 	}
 
+	s.closed = false
+
 	go s.processIncoming()
 
-	for {
+	for !s.closed {
 		conn, err := ln.Accept()
 		if err != nil {
 			return err // TODO: It might be worth closing all connections here
@@ -69,6 +75,24 @@ func (s *Server) Listen(network string) error {
 
 		go s.handleConnection(conn)
 	}
+
+	return s.closeAll()
+}
+
+// Close stops the server listening and closes the connection.
+func (s *Server) Close() {
+	s.closed = true
+}
+
+// closeAll closes all open connections.
+func (s *Server) closeAll() error {
+	for _, conn := range s.connections {
+		if err := conn.Close(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *Server) handleConnection(conn net.Conn) {

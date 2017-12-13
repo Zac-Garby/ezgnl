@@ -17,7 +17,7 @@ type Conn interface {
 	Disconnect(fn MessageHandler)
 
 	// Send sends a message of the given type to the client.
-	Send(t string, msg *message.Message)
+	Send(t string, msg interface{})
 
 	// handle actually calls the handler function.
 	handle(msg *message.Message)
@@ -41,7 +41,7 @@ func (c *connection) Disconnect(fn MessageHandler) {
 }
 
 // Send sends a message of the given type to the client.
-func (c *connection) Send(t string, msg *message.Message) {
+func (c *connection) Send(t string, msg interface{}) {
 	message.Send(t, msg, c.Conn)
 }
 

@@ -14,10 +14,13 @@ type Message struct {
 
 // Send encodes a Message as a gob and sends it
 // through a Writer.
-func Send(t string, msg *Message, w io.Writer) error {
+func Send(t string, msg interface{}, w io.Writer) error {
 	enc := gob.NewEncoder(w)
 
-	return enc.Encode(msg)
+	return enc.Encode(&Message{
+		Data: msg,
+		Type: t,
+	})
 }
 
 // Receive receives the last Message from a Reader.
