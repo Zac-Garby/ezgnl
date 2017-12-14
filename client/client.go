@@ -17,12 +17,25 @@ type MessageHandler func(data interface{})
 // A Client is used to send messages to the server and
 // to receieve and react to messages.
 type Client struct {
-	conn net.Conn
-	id   UUID
+	address string
+	conn    net.Conn
+	id      UUID
 
 	incoming, outgoing chan *message.Message
 
 	handlers map[string]MessageHandler
+}
+
+// New constructs a new Client, which will connect to the
+// given address. But, New doesn't actually connect to the
+// server yet -- use .Connect() for that.
+func New(addr string) *Client {
+	return &Client{
+		address:  addr,
+		incoming: make(chan *message.Message),
+		outgoing: make(chan *message.Message),
+		handlers: make(map[string]MessageHandler),
+	}
 }
 
 // Handle sets the message handler of a certain message type.
