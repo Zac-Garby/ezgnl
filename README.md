@@ -2,6 +2,17 @@
 
 --- Easy Game Networking Library
 
+ezgnl is a networking library in Go suitable for making game servers/clients - or,
+at least, it will be. It works as a generic networking library (a bit like socket.io),
+but I've yet to add features useful for games. Things I'm planning on are:
+
+ - Lobbies
+ - Improved speed
+ - Listing local servers
+ - Rejection of connects from the server
+ - Kicking clients
+ - **Make disconnect handlers work**
+
 ## An example
 
 **The server**
@@ -38,20 +49,24 @@ func main() {
 ```go
 // Sends a message to the echo server
 func main() {
-	// ignore error
 	c := client.New("localhost:8080")
 	defer c.Close()
+
+	reader := bufio.NewReader(os.Stdin)
 
 	c.Handle("reply", func(msg interface{}) {
 		log.Println("got reply:", msg)
 	})
 
-	c.Send("message", "hello, world")
+	// Listen concurrently but still report errors
+	go func() {
+		if err := c.Listen("tcp"); err != nil {
+			log.Println("listen:", err)
+		}
+	}()
 
-	log.Println("listening...")
-
-	if err := c.Listen("tcp"); err != nil {
-		log.Println("listen:", err)
-	}
+	c.Send("message", "hello, world!")
 }
 ```
+
+As you can see, much easier than using the `net` package directly.
