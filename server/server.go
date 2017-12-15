@@ -137,5 +137,7 @@ func (s *Server) handleMessage(id UUID, msg *message.Message) {
 
 // Disconnect disconnects a client from the server
 func (s *Server) Disconnect(id UUID) {
-
+	if conn, ok := s.connections[id]; ok {
+		conn.Close()
+	}
 }
