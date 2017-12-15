@@ -100,6 +100,10 @@ func (c *Client) Send(t string, data interface{}) {
 }
 
 func (c *Client) handleMessage(msg *message.Message) {
+	if msg == nil {
+		return
+	}
+
 	if handler, ok := c.handlers[msg.Type]; ok {
 		handler(msg.Data)
 	}
