@@ -39,7 +39,7 @@ func main() {
 // Sends a message to the echo server
 func main() {
 	// ignore error
-	c, _ := client.New("localhost:8080")
+	c := client.New("localhost:8080")
 	defer c.Close()
 
 	c.Handle("reply", func(msg interface{}) {
@@ -47,5 +47,11 @@ func main() {
 	})
 
 	c.Send("message", "hello, world")
+
+	log.Println("listening...")
+
+	if err := c.Listen("tcp"); err != nil {
+		log.Println("listen:", err)
+	}
 }
 ```
