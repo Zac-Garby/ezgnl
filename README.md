@@ -15,6 +15,7 @@ func main() {
 	s.Accept(func(conn server.Conn, id server.UUID) {
 		conn.Handle("message", func(msg interface{}) {
 			log.Println("received message:", msg)
+
 			conn.Send("reply", msg)
 		})
 
@@ -30,4 +31,27 @@ func main() {
 	}
 }
 
+```
+
+**The client**
+
+```go
+// Sends a message to the echo server
+func main() {
+	// ignore error
+	c := client.New("localhost:8080")
+	defer c.Close()
+
+	c.Handle("reply", func(msg interface{}) {
+		log.Println("got reply:", msg)
+	})
+
+	c.Send("message", "hello, world")
+
+	log.Println("listening...")
+
+	if err := c.Listen("tcp"); err != nil {
+		log.Println("listen:", err)
+	}
+}
 ```

@@ -33,6 +33,9 @@ type Server struct {
 	// received/to-be-sent messages.
 	incomings chan incoming
 	outgoings chan outgoing
+	newConns  chan net.Conn
+	errors    chan error
+	closeChan chan bool
 
 	// connHandler is called for each
 	connHandler ConnectionHandler
@@ -50,6 +53,9 @@ func New(port string) *Server {
 		connections: make(map[UUID]Conn),
 		incomings:   make(chan incoming),
 		outgoings:   make(chan outgoing),
+		newConns:    make(chan net.Conn),
+		errors:      make(chan error),
+		closeChan:   make(chan bool),
 		closed:      true,
 	}
 }
@@ -58,22 +64,28 @@ func New(port string) *Server {
 // parameter is the type of network to use, for example "tcp" or
 // "udp".
 func (s *Server) Listen(network string) error {
-	ln, err := net.Listen("tcp", ":"+s.Port)
-	if err != nil {
-		return err
-	}
+	go s.waitForConnections()
 
 	s.closed = false
 
-	go s.processIncoming()
-
 	for !s.closed {
-		conn, err := ln.Accept()
-		if err != nil {
-			return err // TODO: It might be worth closing all connections here
-		}
+		select {
+		case err := <-s.errors:
+			s.closeAll()
+			return err
 
-		go s.handleConnection(conn)
+		case _ = <-s.closeChan:
+			break
+
+		case msg := <-s.incomings:
+			go s.handleMessage(msg.sender, msg.Message)
+
+		case msg := <-s.outgoings:
+			go message.Send(msg.Type, msg.Data, s.connections[msg.receiver])
+
+		case conn := <-s.newConns:
+			go s.handleConnection(conn)
+		}
 	}
 
 	return s.closeAll()
@@ -81,7 +93,7 @@ func (s *Server) Listen(network string) error {
 
 // Close stops the server listening and closes the connection.
 func (s *Server) Close() {
-	s.closed = true
+	s.closeChan <- true
 }
 
 // closeAll closes all open connections.
@@ -95,15 +107,36 @@ func (s *Server) closeAll() error {
 	return nil
 }
 
-func (s *Server) handleConnection(conn net.Conn) {
-	id := uuid.NewV4()
-
-	s.connections[id] = &connection{
-		Conn:     conn,
-		handlers: make(map[string]MessageHandler),
+func (s *Server) waitForConnections() {
+	ln, err := net.Listen("tcp", ":"+s.Port)
+	if err != nil {
+		s.errors <- err
 	}
 
-	go s.awaitMessages(id, s.connections[id])
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			s.errors <- err
+		}
+
+		s.newConns <- conn
+	}
+}
+
+func (s *Server) handleConnection(conn net.Conn) {
+	var (
+		id = uuid.NewV4()
+
+		c = &connection{
+			Conn:     conn,
+			handlers: make(map[string]MessageHandler),
+		}
+	)
+
+	s.connHandler(c, id)
+	s.connections[id] = c
+
+	go s.awaitMessages(id, c)
 }
 
 func (s *Server) awaitMessages(id UUID, conn Conn) {
@@ -124,18 +157,13 @@ func (s *Server) awaitMessages(id UUID, conn Conn) {
 	}
 }
 
-func (s *Server) processIncoming() {
-	for {
-		msg := <-s.incomings
-		go s.handleMessage(msg.sender, msg.Message)
-	}
-}
-
 func (s *Server) handleMessage(id UUID, msg *message.Message) {
 	s.connections[id].handle(msg)
 }
 
 // Disconnect disconnects a client from the server
 func (s *Server) Disconnect(id UUID) {
-
+	if conn, ok := s.connections[id]; ok {
+		conn.Close()
+	}
 }
