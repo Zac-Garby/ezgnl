@@ -1,6 +1,6 @@
 # ezgnl
 
---- Easy Game Networking Library
+⸻ Easy Game Networking Library
 
 ezgnl is a networking library in Go suitable for making game servers/clients - or,
 at least, it will be. It works as a generic networking library (a bit like socket.io),
