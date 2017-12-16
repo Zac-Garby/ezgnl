@@ -51,8 +51,6 @@ func main() {
 	c := client.New("localhost:8080")
 	defer c.Close()
 
-	reader := bufio.NewReader(os.Stdin)
-
 	c.Handle("reply", func(msg interface{}) {
 		log.Println("got reply:", msg)
 	})
