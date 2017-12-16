@@ -69,3 +69,13 @@ func main() {
 ```
 
 As you can see, much easier than using the `net` package directly.
+
+## Reserved message types
+
+Some message types are reserved for internal use. You _can_ use them, but it's
+probably not a good idea:
+
+ - `disconnect`
+ - `ping`
+ - `pong`
+ - More might be added in the future
