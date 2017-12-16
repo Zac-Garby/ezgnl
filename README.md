@@ -6,7 +6,7 @@ ezgnl is a networking library in Go suitable for making game servers/clients - o
 at least, it will be. It works as a generic networking library (a bit like socket.io),
 but I've yet to add features useful for games. Things I'm planning on are:
 
- - Lobbies
+ - Make UDP servers work
  - Improved speed
  - Listing local servers
  - Rejection of connects from the server
