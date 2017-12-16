@@ -11,7 +11,6 @@ but I've yet to add features useful for games. Things I'm planning on are:
  - Listing local servers
  - Rejection of connects from the server
  - Kicking clients
- - **Make disconnect handlers work**
 
 ## An example
 
