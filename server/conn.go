@@ -51,3 +51,12 @@ func (c *connection) handle(msg *message.Message) {
 		h(msg.Data)
 	}
 }
+
+// Close closes the connection and calls the disconnect handler.
+func (c *connection) Close() error {
+	c.handle(&message.Message{
+		Type: "disconnect",
+	})
+
+	return c.Conn.Close()
+}

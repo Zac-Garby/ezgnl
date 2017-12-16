@@ -146,7 +146,10 @@ func (s *Server) awaitMessages(id UUID, conn Conn) {
 		// An error was most likely caused by the client
 		// disconnecting, but either way, end the connection.
 		if err != nil {
-			s.Disconnect(id)
+			if err := s.Disconnect(id); err != nil {
+				s.errors <- err
+			}
+
 			break
 		}
 
@@ -162,8 +165,11 @@ func (s *Server) handleMessage(id UUID, msg *message.Message) {
 }
 
 // Disconnect disconnects a client from the server
-func (s *Server) Disconnect(id UUID) {
+func (s *Server) Disconnect(id UUID) error {
 	if conn, ok := s.connections[id]; ok {
-		conn.Close()
+		delete(s.connections, id)
+		return conn.Close()
 	}
+
+	return nil
 }
